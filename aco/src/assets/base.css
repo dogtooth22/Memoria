@@ -105,4 +105,26 @@ body {
       fill: var(--marker-fill);
     }
   }
+
+  table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+    margin: 10px;
+
+    .firstTableRow {
+      background-color: rgb(228 240 245) !important;
+      th {
+        font-weight: bold;
+      }
+    }
+
+    .firstTableColumn {
+      background-color: rgb(228 240 245);
+      font-weight: bold;
+    }
+  }
+  
+  tr:nth-child(odd) {
+    background-color: rgb(237 238 242);
+  }
 }

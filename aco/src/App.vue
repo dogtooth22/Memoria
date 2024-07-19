@@ -33,6 +33,7 @@
     </div>
     <input type="file" ref="fileInput" accept=".txt" @change="onFilePicked"/>
     <template v-if="file != null && loading == false">
+      <p>Execution Time: {{ executionTime }}s</p>
       <div class="row">
         <button @click="minusBus">&lt;</button>
         <button @click="plusBus">&gt;</button>
@@ -42,16 +43,17 @@
       </div>
   
       <p>Bus {{ currentBus + 1 }}</p>
-    </template>
 
+    </template>
+    
     <template v-if="file != null && loading == true">
       <p>Loading...</p>
     </template>
-
+    
     <template v-if="file == null && loading == false">
       <p>Upload a file</p>
     </template>
-
+    <!--<HelloWorld></HelloWorld>-->
     <svg ref="svg">
       <defs>
         <filter id="rounded-corners" x="-5%" width="110%" y="0%" height="100%">
@@ -60,7 +62,7 @@
           <feComponentTransfer>
             <feFuncA type="table"tableValues="0 0 0 1"/>
           </feComponentTransfer>
-
+          
           <feComponentTransfer>
             <feFuncA type="table"tableValues="0 1 1 1 1 1 1 1"/>
             </feComponentTransfer>
@@ -73,7 +75,31 @@
         </filter> 
       </defs>
     </svg>
-    <!--<HelloWorld></HelloWorld>-->
+    <div class="column" v-if="file != null && loading == false">
+      <table style="width: 50%;">
+        <tr class="firstTableRow">
+          <th><!--Bus--></th>
+          <th v-for="path in maxPath">Trip {{ path }}</th>
+        </tr>
+        <tr v-for="(item, index) in finalRoutes.length">
+          <td class="firstTableColumn">Bus {{ index + 1 }}</td>
+          <td v-for="route in finalRoutes[index]">
+            {{ route[0] + 1 }} -> {{ route[1] + 1 }}
+          </td>
+          <td v-for="i in maxPath - finalRoutes[index].length"></td>
+        </tr>
+      </table>
+      <table style="width: 50%;">
+        <tr class="firstTableRow">
+          <th>Shelters</th>
+          <th v-for="index in finalShelters.length">{{ index }}</th>
+        </tr>
+        <tr>
+          <td class="firstTableColumn">Space Available</td>
+          <td v-for="shelter in finalShelters">{{ shelter }}</td>
+        </tr>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -89,8 +115,9 @@
   const nodes = [], links = [];
   var link = null;
   var nodeVerticalDistances = 200, nodeHorizontalDistances = 500;
-  var firstDistances, secondDistances, finalRoutes = [];
-  var addedPaths = [];
+  var firstDistances, secondDistances, finalRoutes, finalShelters = [], executionTime = ref(0);
+  var maxPath = 0;
+  var addedPaths = [], excludedPaths = [];
   const currentBus = ref(0);
   const animationPlaying = ref(false);
   const file = ref(null);
@@ -127,6 +154,8 @@
             d3.select(link["_groups"][0][j]).attr("marker-end", "url(#arrowhead)")
             .attr('stroke', 'red').transition().duration('1000');
             break;
+          } else {
+            excludedPaths.push(j);
           }
         }
       } else {
@@ -156,9 +185,14 @@
                   .attr('stroke', 'red').transition().duration('1000');
                   addedPaths.push(m);
                   break;
+                } else {
+                  excludedPaths.push(m);
                 }
               }
-            } break;
+            } else {
+              //addedPaths.push(j); // Did an extra push
+            }
+            break;
           }
         }
       }
@@ -214,7 +248,7 @@
   }
 
   const hidePaths = () => {
-    console.log(addedPaths);
+    //console.log(addedPaths, excludedPaths);
     for (var i = 0; i < link["_groups"][0].length; i++) {
       if (!addedPaths.includes(i)) {
         d3.select(link["_groups"][0][i]).attr('stroke', 'transparent').style('pointer-events', 'none');
@@ -222,11 +256,11 @@
     }
   }
 
-
-
   const onFilePicked = (event) => {
     loading.value = true;
-    clearPath(); clearNodes(); clearLinks();
+    currentBus.value = 0;
+    maxPath = 0;
+    clearPath(); clearNodes(); clearLinks(); stopAnimation();
     file.value = event.target.files[0];
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -235,8 +269,6 @@
     reader.readAsText(file.value);
 
     var formData = new FormData();
-    var finalShelters = [];
-    var finalTime = 0;
     formData.append('file', file.value);
     formData.append('alpha', alpha);
     formData.append('beta', beta);
@@ -257,11 +289,17 @@
 
         finalRoutes = response.data[2];
         finalShelters = response.data[3];
-        finalTime = response.data[4];
+        executionTime = response.data[4];
+
+        for (var i = 0; i < finalRoutes.length; i++) {
+          if (maxPath < finalRoutes[i].length) {
+            maxPath = finalRoutes[i].length;
+          }
+        }
 
         const middleFirstPoint = (firstDistances.length - 1) / 2;
         const middleSecondPoint = (secondDistances.length + 1) / 2;
-        const middleThirdPoint = (secondDistances[0].length - 1) / 2;;
+        const middleThirdPoint = (secondDistances[0].length - 1) / 2;
 
         for (var i = 0; i < firstDistances.length; i++) {
           nodes[i] = { id: i, name: 'Partida ' + (i + 1) };
@@ -279,7 +317,7 @@
         }
 
         for (var i = 0; i < secondDistances[0].length; i++) {
-          nodes[i + firstDistances.length + secondDistances.length] = { id: i + firstDistances.length + secondDistances.length, name: 'Destino ' + (i + 1) };
+          nodes[i + firstDistances.length + secondDistances.length] = { id: i + firstDistances.length + secondDistances.length, name: 'Refugio ' + (i + 1) };
           nodes[i + firstDistances.length + secondDistances.length].fx = 100 + nodeHorizontalDistances*2;
           nodes[i + firstDistances.length + secondDistances.length].fy = nodeVerticalDistances*middleSecondPoint + nodeVerticalDistances*(i - middleThirdPoint);
           for (var j = 0; j < secondDistances.length; j++) {
@@ -290,7 +328,7 @@
         var width = 200 + nodeHorizontalDistances*2, height = nodeVerticalDistances*(secondDistances.length + 1);
       
         const svgElement = d3.select(svg.value)
-                            .attr('width', width)
+                            .attr('width', window.screen.width)
                             .attr('height', height);
       
         // Define arrow markers for graph links
