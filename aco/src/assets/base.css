@@ -39,6 +39,9 @@
 
   --marker-stroke: var(--vt-c-black);
   --marker-fill: red;
+
+  --table-header: rgb(228 240 245);
+  --table-odd: rgb(237 238 242);
 }
 
 @media (prefers-color-scheme: dark) { /* Dark Mode */
@@ -57,6 +60,9 @@
 
     --marker-stroke: var(--vt-c-white);
     --marker-fill: red;
+
+    --table-header: rgb(19, 19, 19);
+    --table-odd: rgb(19, 19, 19);
   }
 }
 
@@ -67,25 +73,21 @@
 }
 
 body {
+  display: grid;
+  grid-template-areas: "main" "footer";
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr auto;
+
+  width: 100vw;
+  height: 100vh;
   color: var(--color-text);
   background: var(--color-background);
   transition:
     color 0.5s,
     background-color 0.5s;
   line-height: 1.6;
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   font-size: 15px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -107,24 +109,40 @@ body {
   }
 
   table, th, td {
-    border: 1px solid black;
+    border: 1px solid var(--color-text);
     border-collapse: collapse;
     margin: 10px;
 
     .firstTableRow {
-      background-color: rgb(228 240 245) !important;
+      background-color: var(--table-header) !important;
       th {
         font-weight: bold;
       }
     }
 
     .firstTableColumn {
-      background-color: rgb(228 240 245);
+      background-color: var(--table-header);
       font-weight: bold;
     }
   }
   
   tr:nth-child(odd) {
-    background-color: rgb(237 238 242);
+    background-color: var(--table-odd);
+  }
+
+  footer {
+    grid-area: footer;
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    position: relative;
+    left: 0;
+    bottom: 0;
+  
+    .logo > img {
+      width: 50px;
+    }
   }
 }
+

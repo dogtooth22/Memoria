@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1>Bus Evacuation Problem Route Visualization</h1>
-    <div class="row">
+    <div class="row flex-wrap">
       <div class="column">
         <p>Alpha</p>
         <input type="number" v-model="alpha" min="0" step="0.1"/>
@@ -34,72 +34,91 @@
     <input type="file" ref="fileInput" accept=".txt" @change="onFilePicked"/>
     <template v-if="file != null && loading == false">
       <p>Execution Time: {{ executionTime }}s</p>
-      <div class="row">
+      <div class="row menu-buttons">
         <button @click="minusBus">&lt;</button>
         <button @click="plusBus">&gt;</button>
         <button @click="playAnimation" v-if="animationPlaying == false"><i class="fa fa-play"></i></button>
         <button @click="stopAnimation" v-else><i class="fa fa-pause"></i></button>
-        <button @click="hidePaths">Hide Paths</button>
+        <button @click="hidePaths" v-if="pathsHidden == false">Hide Paths</button>
+        <button @click="showPaths" v-else>Show Paths</button>
       </div>
   
-      <p>Bus {{ currentBus + 1 }}</p>
+      <p>Bus {{ currentBus + 1 }}, distance {{ pathsDistances[currentBus] }}</p>
 
     </template>
     
-    <template v-if="file != null && loading == true">
-      <p>Loading...</p>
-    </template>
+    <div class="column" v-if="file != null && loading == true">
+      <div class="loader"></div>
+    </div>
     
     <template v-if="file == null && loading == false">
       <p>Upload a file</p>
     </template>
     <!--<HelloWorld></HelloWorld>-->
-    <svg ref="svg">
-      <defs>
-        <filter id="rounded-corners" x="-5%" width="110%" y="0%" height="100%">
-          <feFlood flood-color="#FFAA55"/>
-          <feGaussianBlur stdDeviation="2"/>
-          <feComponentTransfer>
-            <feFuncA type="table"tableValues="0 0 0 1"/>
-          </feComponentTransfer>
-          
-          <feComponentTransfer>
-            <feFuncA type="table"tableValues="0 1 1 1 1 1 1 1"/>
+
+    <div class="column">
+      <svg ref="svg" overflow="visible">
+        <defs>
+          <filter id="rounded-corners" x="-5%" width="110%" y="0%" height="100%">
+            <feFlood flood-color="#FFAA55"/>
+            <feGaussianBlur stdDeviation="2"/>
+            <feComponentTransfer>
+              <feFuncA type="table"tableValues="0 0 0 1"/>
             </feComponentTransfer>
+            
+            <feComponentTransfer>
+              <feFuncA type="table"tableValues="0 1 1 1 1 1 1 1"/>
+              </feComponentTransfer>
+              <feComposite operator="over" in="SourceGraphic"/>
+          </filter>
+          
+          <filter id="rounded-corners-2" primitiveUnits="objectBoundingBox">
+            <feImage preserveAspectRatio="none" width="110%" height="110%" x="-5%" y="0%"  xlink:href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px' viewBox='0 0 400 40' height='40' width='400'%3E%3Crect fill='green' x='0' y='0' rx='20' ry='10' width='400' height='40'/%3E%3C/svg%3E"/>
             <feComposite operator="over" in="SourceGraphic"/>
-        </filter>
-        
-        <filter id="rounded-corners-2" primitiveUnits="objectBoundingBox">
-          <feImage preserveAspectRatio="none" width="110%" height="110%" x="-5%" y="0%"  xlink:href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px' viewBox='0 0 400 40' height='40' width='400'%3E%3Crect fill='green' x='0' y='0' rx='20' ry='10' width='400' height='40'/%3E%3C/svg%3E"/>
-          <feComposite operator="over" in="SourceGraphic"/>
-        </filter> 
-      </defs>
-    </svg>
-    <div class="column" v-if="file != null && loading == false">
-      <table style="width: 50%;">
-        <tr class="firstTableRow">
-          <th><!--Bus--></th>
-          <th v-for="path in maxPath">Trip {{ path }}</th>
-        </tr>
-        <tr v-for="(item, index) in finalRoutes.length">
-          <td class="firstTableColumn">Bus {{ index + 1 }}</td>
-          <td v-for="route in finalRoutes[index]">
-            {{ route[0] + 1 }} -> {{ route[1] + 1 }}
-          </td>
-          <td v-for="i in maxPath - finalRoutes[index].length"></td>
-        </tr>
-      </table>
-      <table style="width: 50%;">
-        <tr class="firstTableRow">
-          <th>Shelters</th>
-          <th v-for="index in finalShelters.length">{{ index }}</th>
-        </tr>
-        <tr>
-          <td class="firstTableColumn">Space Available</td>
-          <td v-for="shelter in finalShelters">{{ shelter }}</td>
-        </tr>
-      </table>
+          </filter>
+
+          <!-- Define arrow markers for graph links -->
+          <!-- refX controls the distance between the node and the arrow -->
+          <marker id="arrowhead" viewBox="-0 -5 10 10" refX="20" refY="0" orient="auto-start-reverse" markerWidth="7" markerHeight="7" xoverflow="visible">
+            <path d="M 0,-5 L 10 ,0 L 0,5 Z" stroke="#000"></path>
+          </marker>
+        </defs>
+        <g></g>
+      </svg>
+      <div class="column" style="width: 100%;" v-if="file != null && loading == false">
+        <table class="main-table">
+          <tr class="firstTableRow">
+            <th><!--Bus--></th>
+            <th v-for="path in maxPath">Trip {{ path }}</th>
+            <th></th>
+            <th>Total Distance</th>
+          </tr>
+          <tr v-for="(item, index) in finalRoutes.length">
+            <td class="firstTableColumn">Bus {{ index + 1 }}</td>
+            <td v-for="route in finalRoutes[index]">
+              {{ route[0] + 1 }} -> {{ route[1] + 1 }}
+            </td>
+            <td v-for="i in maxPath - finalRoutes[index].length"></td>
+            <td></td>
+            <td>{{ pathsDistances[index] }}</td>
+          </tr>
+        </table>
+        <table class="main-table">
+          <tr class="firstTableRow">
+            <th>Shelters</th>
+            <th v-for="index in finalShelters.length">{{ index }}</th>
+          </tr>
+          <tr>
+            <td class="firstTableColumn">Space Available</td>
+            <td v-for="shelter in finalShelters">{{ shelter }}</td>
+          </tr>
+        </table>
+        <img v-bind:src="sourceImage" alt="">
+        <p style="width: 50%;">Ant Colony Optimization progress over time. All solutions are improved in order to have a shorter evacuation time. To improve solutions, you might try with different parameters, such as the number of iterations.</p>
+      </div>
     </div>
+
+    
   </div>
 </template>
 
@@ -109,19 +128,22 @@
   import axios from 'axios';
   import * as d3 from 'd3';
 
+  // Default parameters
   var alpha = 1, beta = 1, q = 4, decay = 0.9, n_iterations = 50, algorithm = "ant_density";
 
   const svg = ref(null);
   const nodes = [], links = [];
   var link = null;
   var nodeVerticalDistances = 200, nodeHorizontalDistances = 500;
-  var firstDistances, secondDistances, finalRoutes, finalShelters = [], executionTime = ref(0);
+  var firstDistances, secondDistances, finalRoutes, pathsDistances, finalShelters = [], executionTime = ref(0);
   var maxPath = 0;
   var addedPaths = [], excludedPaths = [];
   const currentBus = ref(0);
   const animationPlaying = ref(false);
   const file = ref(null);
   var loading = ref(false);
+  var pathsHidden = ref(false);
+  var sourceImage = ref('');
 
   const plusBus = () => {
     if (currentBus.value < finalRoutes.length - 1) {
@@ -249,9 +271,19 @@
 
   const hidePaths = () => {
     //console.log(addedPaths, excludedPaths);
+    pathsHidden.value = !pathsHidden.value;
     for (var i = 0; i < link["_groups"][0].length; i++) {
       if (!addedPaths.includes(i)) {
         d3.select(link["_groups"][0][i]).attr('stroke', 'transparent').style('pointer-events', 'none');
+      }
+    }
+  }
+
+  const showPaths = () => {
+    pathsHidden.value = !pathsHidden.value;
+    for (var i = 0; i < link["_groups"][0].length; i++) {
+      if (!addedPaths.includes(i)) {
+        d3.select(link["_groups"][0][i]).attr('stroke', '#999').style('pointer-events', 'auto');
       }
     }
   }
@@ -288,8 +320,11 @@
         secondDistances = response.data[1];
 
         finalRoutes = response.data[2];
-        finalShelters = response.data[3];
-        executionTime = response.data[4];
+        pathsDistances = response.data[3]
+        finalShelters = response.data[4];
+        executionTime = response.data[5];
+
+        sourceImage = 'data:image/png;base64,' + response.data[6];
 
         for (var i = 0; i < finalRoutes.length; i++) {
           if (maxPath < finalRoutes[i].length) {
@@ -328,22 +363,8 @@
         var width = 200 + nodeHorizontalDistances*2, height = nodeVerticalDistances*(secondDistances.length + 1);
       
         const svgElement = d3.select(svg.value)
-                            .attr('width', window.screen.width)
+                            .attr('width', width)
                             .attr('height', height);
-      
-        // Define arrow markers for graph links
-        svgElement.select('defs').append('marker')
-                  .attr('id', 'arrowhead')
-                  .attr('viewBox', '-0 -5 10 10')
-                  .attr('refX', 20) // Controls the distance between the node and the arrow
-                  .attr('refY', 0)
-                  .attr('orient', 'auto-start-reverse')
-                  .attr('markerWidth', 7)
-                  .attr('markerHeight', 7)
-                  .attr('xoverflow', 'visible')
-                  .append('svg:path')
-                  .attr('d', 'M 0,-5 L 10 ,0 L 0,5 Z')
-                  .attr('stroke', '#000');
       
         // Draw graph links
         var divLink = d3.select("svg").append("text")
@@ -352,38 +373,38 @@
           .attr("fill", "black")
           .attr("filter", "url(#rounded-corners)")
 
-        link = svgElement.append('g')
-                              .attr('class', 'links')
-                              .selectAll('line')
-                              .data(links)
-                              .enter().append('line')
-                              .attr('stroke-width', 2)
-                              .attr('stroke', '#999')
-                              .on('mouseover', function(d, i) {
-                                const link = d3.select(this);
-                                const x = (parseInt(link.attr('x1')) + parseInt(link.attr('x2'))) / 2;
-                                const y = (parseInt(link.attr('y1')) + parseInt(link.attr('y2'))) / 2;
-                                link.transition()
-                                .duration("200")
-                                .attr('stroke-width', 4);
+        link = svgElement.select('g')
+                .attr('class', 'links')
+                .selectAll('line')
+                .data(links)
+                .enter().append('line')
+                .attr('stroke-width', 2)
+                .attr('stroke', '#999')
+                .on('mouseover', function(d, i) {
+                  const link = d3.select(this);
+                  const x = (parseInt(link.attr('x1')) + parseInt(link.attr('x2'))) / 2;
+                  const y = (parseInt(link.attr('y1')) + parseInt(link.attr('y2'))) / 2;
+                  link.transition()
+                  .duration("200")
+                  .attr('stroke-width', 4);
 
-                                divLink.transition()
-                                  .duration('50')
-                                  .style("opacity", 1);
+                  divLink.transition()
+                    .duration('50')
+                    .style("opacity", 1);
 
-                                let num = i['length']
-                                divLink.html(num)
-                                  .attr("x", (parseFloat(x) + 15))
-                                  .attr("y", (parseFloat(y) + 15))
-                              }
-                              ).on('mouseout', function(d, i) {
-                                d3.select(this).transition()
-                                .duration("200")
-                                .attr('stroke-width', 2);
-                                divLink.transition()
-                                  .duration('50')
-                                  .style("opacity", 0);
-                              })
+                  let num = i['length']
+                  divLink.html(num)
+                    .attr("x", (parseFloat(x) + 15))
+                    .attr("y", (parseFloat(y) + 15))
+                }
+                ).on('mouseout', function(d, i) {
+                  d3.select(this).transition()
+                  .duration("200")
+                  .attr('stroke-width', 2);
+                  divLink.transition()
+                    .duration('50')
+                    .style("opacity", 0);
+                })
       
         var divNode = d3.select("svg").append("text")
           .attr("class", "tooltip")
@@ -391,57 +412,57 @@
           .attr("fill", "red")
           .attr("filter", "url(#rounded-corners-2)")
 
-        var busNumber = d3.select("svg").append("text")
+        /*var busNumber = d3.select("svg").append("text")
           .attr("class", "tooltip")
           .attr("font", "10px sans-serif")
           .attr("fill", "black")
-          .attr("filter", "url(#rounded-corners)")
+          .attr("filter", "url(#rounded-corners)")*/
       
         // Draw graph nodes
         const nodeRadius = 15;
-        const node = svgElement.append('g')
-                              .attr('class', 'nodes')
-                              .selectAll('circle')
-                              .data(nodes)
-                              .enter().append('circle')
-                              .attr('r', nodeRadius)
-                              .attr('fill', '#69b3a2')
-                              .attr('stroke-width', 3)
-                              .on('mouseover', function(d, i) {
-                                const node = d3.select(this);
-                                const x = node.attr('cx');
-                                const y = node.attr('cy');
-                                node.transition()
-                                .duration("200")
-                                .attr('r', nodeRadius + 3);
-      
-                                divNode.transition()
-                                  .duration('50')
-                                  .style("opacity", 1);
-      
-                                let num = i['name']
-                                divNode.html(num)
-                                  .attr("x", (parseFloat(x) + 15))
-                                  .attr("y", (parseFloat(y) + 15))
-                              })
-                              .on('mouseout', function(d, i) {
-                                d3.select(this).transition()
-                                .duration("200")
-                                .attr('r', nodeRadius);
-      
-                                divNode.transition()
-                                  .duration('50')
-                                  .style("opacity", 0);
-                              })
-                              .on('click', function(d, i) {
-                                if (i["index"] < firstDistances.length) {
-                                  //console.log("Partida:", i["index"]);
-                                } else if (i["index"] >= firstDistances.length && i["index"] < firstDistances.length + secondDistances.length) {
-                                  //console.log("Hola");
-                                } else {
-                                  //console.log("Espacio Disponible:", finalShelters[i["index"] - firstDistances.length - secondDistances.length]);
-                                }
-                              });
+        const node = svgElement.select('g')
+                      .attr('class', 'nodes')
+                      .selectAll('circle')
+                      .data(nodes)
+                      .enter().append('circle')
+                      .attr('r', nodeRadius)
+                      .attr('fill', '#69b3a2')
+                      .attr('stroke-width', 3)
+                      .on('mouseover', function(d, i) {
+                        const node = d3.select(this);
+                        const x = node.attr('cx');
+                        const y = node.attr('cy');
+                        node.transition()
+                        .duration("200")
+                        .attr('r', nodeRadius + 3);
+
+                        divNode.transition()
+                          .duration('50')
+                          .style("opacity", 1);
+
+                        let num = i['name']
+                        divNode.html(num)
+                          .attr("x", (parseFloat(x) + 15))
+                          .attr("y", (parseFloat(y) + 15))
+                      })
+                      .on('mouseout', function(d, i) {
+                        d3.select(this).transition()
+                        .duration("200")
+                        .attr('r', nodeRadius);
+
+                        divNode.transition()
+                          .duration('50')
+                          .style("opacity", 0);
+                      })
+                      .on('click', function(d, i) {
+                        if (i["index"] < firstDistances.length) {
+                          //console.log("Partida:", i["index"]);
+                        } else if (i["index"] >= firstDistances.length && i["index"] < firstDistances.length + secondDistances.length) {
+                          //console.log("Hola");
+                        } else {
+                          //console.log("Espacio Disponible:", finalShelters[i["index"] - firstDistances.length - secondDistances.length]);
+                        }
+                      });
         changeBus();
         // Set up force simulation
         const simulation = d3.forceSimulation(nodes)
@@ -459,7 +480,10 @@
           node.attr('cx', d => d.x)
               .attr('cy', d => d.y);
         });
-      }).catch(error => console.error(error));
+      }).catch(error => {
+        loading.value = false;
+        console.error(error);
+    });
   };
 
   onMounted(() => {

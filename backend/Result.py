@@ -1,7 +1,10 @@
 from tabulate import tabulate
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import copy
+
+matplotlib.use('agg')
 
 class Result:
     def __init__(self, paths, longestDistance, shelters, pickupPoints):
@@ -79,6 +82,8 @@ class Result:
     
     def plotSolutions(self, solutions): # When there are larger iterations, correlation is not as visible, but with smaller iterations there is a little correlation.
         # I believe this is important because it can escape local maximums. Might try a reset of the pheromones when the correlation is too low
+        
+        plt.close()
 
         xpoints = np.array([i for i in range(len(solutions))])
         ypoints = solutions
@@ -91,5 +96,4 @@ class Result:
         corr = np.corrcoef(xpoints, ypoints)
         plt.plot(np.unique(xpoints), np.poly1d(np.polyfit(xpoints, ypoints, 1)) (np.unique(xpoints)), color='red', label='Correlation: ' + str(round(corr[0][1], 3)))
         plt.legend(loc='upper right')
-
-        plt.show()
+        return plt

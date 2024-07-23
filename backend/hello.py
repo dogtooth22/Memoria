@@ -1,6 +1,8 @@
 import time
 import numpy as np
-from flask import Flask, request
+import base64
+from io import BytesIO
+from flask import Flask, request, send_file, make_response
 from flask_cors import CORS
 from Instancia import Instancia
 from ACO import ACO
@@ -8,10 +10,6 @@ from ACO import ACO
 app = Flask(__name__)
 
 CORS(app, resources={r'/*': {'origins': '*'}})
-
-@app.route("/")
-def hello_world():
-    return [1,2,3,4,5,6,7]
 
 @app.route("/", methods=['POST'])
 def post_world():
@@ -21,7 +19,6 @@ def post_world():
     string = file_content.decode('utf-8')
 
     instancia = Instancia(string)
-    print(request.form['algorithm'])
     n_iterations = int(request.form['n_iterations']); decay = float(request.form['decay']); alpha = float(request.form['alpha']); beta = float(request.form['beta']); q = float(request.form['q'])
     algorithm = request.form['algorithm']
 
@@ -36,13 +33,21 @@ def post_world():
     end_time = time.time()
 
     final_time = round((end_time - start_time), 2)
-
-    best_route.tabulateResults(best_route)
+    #best_route.tabulateResults(best_route)
 
     paths = [convert_numpy_int_to_int(i.path) for i in best_route.paths]
 
-    print("\nExecution Time: " + str(final_time) + " seconds")
-    return [instancia.distanciasEstacionesPuntosEncuentros.tolist(), instancia.distanciasPuntosEncuentrosRefugios.tolist(), paths, best_route.shelters.tolist(), final_time]
+    pathsDistances = [convert_numpy_int_to_int(i.pathDistance) for i in best_route.paths]
+
+    image = best_route.plotSolutions(best_route.statistics)
+
+    output = BytesIO()
+    image.savefig(output, format='png')
+    output.seek(0)  # Rewind the buffer
+
+    encoded_image = base64.b64encode(output.read()).decode('utf-8')
+    
+    return [instancia.distanciasEstacionesPuntosEncuentros.tolist(), instancia.distanciasPuntosEncuentrosRefugios.tolist(), paths, pathsDistances, best_route.shelters.tolist(), final_time, encoded_image]
 
 @app.route("/hello")
 def hello():
