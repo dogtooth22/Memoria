@@ -20,7 +20,7 @@
       </div>
       <div class="column">
         <p>N of iterations</p>
-        <input type="number" v-model="n_iterations" min="1" step="1"/>
+        <input type="number" v-model="n_iterations" min="1" step="10"/>
       </div>
       <div class="column">
         <p>Algorithm</p>
@@ -31,9 +31,13 @@
         </select>
       </div>
     </div>
-    <input type="file" ref="fileInput" accept=".txt" @change="onFilePicked"/>
-    <template v-if="file != null && loading == false">
+    <div class="column menu-buttons">
+      <input type="file" ref="fileInput" accept=".txt" @change="onFilePicked"/>
+      <button @click="runAlgorithm" :disabled="!fileUploaded">Run</button>
+    </div>
+    <template v-if="executed == true && loading == false">
       <p>Execution Time: {{ executionTime }}s</p>
+      <p>Evacuation Time: {{ longestPath }}</p>
       <div class="row menu-buttons">
         <button @click="minusBus">&lt;</button>
         <button @click="plusBus">&gt;</button>
@@ -47,17 +51,18 @@
 
     </template>
     
-    <div class="column" v-if="file != null && loading == true">
+    <div class="column" v-if="executed == true && loading == true">
       <div class="loader"></div>
     </div>
     
-    <template v-if="file == null && loading == false">
+    <template v-if="executed == false && loading == false">
       <p>Upload a file</p>
     </template>
     <!--<HelloWorld></HelloWorld>-->
 
     <div class="column">
       <svg ref="svg" overflow="visible">
+        <!-- <text x="20" y="35">This is a example text for a svg view</text> -->
         <defs>
           <filter id="rounded-corners" x="-5%" width="110%" y="0%" height="100%">
             <feFlood flood-color="#FFAA55"/>
@@ -85,7 +90,7 @@
         </defs>
         <g></g>
       </svg>
-      <div class="column" style="width: 100%;" v-if="file != null && loading == false">
+      <div class="column" style="width: 100%;" v-if="executed == true && loading == false">
         <table class="main-table">
           <tr class="firstTableRow">
             <th><!--Bus--></th>
@@ -114,11 +119,12 @@
           </tr>
         </table>
         <img v-bind:src="sourceImage" alt="">
-        <p style="width: 50%;">Ant Colony Optimization progress over time. All solutions are improved in order to have a shorter evacuation time. To improve solutions, you might try with different parameters, such as the number of iterations.</p>
+        <div class="column" style="width: 50%;">
+          <p>Ant Colony Optimization progress over time. All solutions are improved in order to have a shorter evacuation time. To improve solutions, you might try with different parameters, such as the number of iterations.</p>
+          <p>Correlation's slope shows if the number of iterations has any impact in the solution's quality. It's better when the slope is negative and closer to -1, but since solutions are very random that might not be very frequent.</p>
+        </div>
       </div>
     </div>
-
-    
   </div>
 </template>
 
@@ -139,8 +145,11 @@
   var maxPath = 0;
   var addedPaths = [], excludedPaths = [];
   const currentBus = ref(0);
+  const longestPath = ref(0);
   const animationPlaying = ref(false);
   const file = ref(null);
+  var fileUploaded = ref(false);
+  var executed = ref(false);
   var loading = ref(false);
   var pathsHidden = ref(false);
   var sourceImage = ref('');
@@ -270,7 +279,6 @@
   }
 
   const hidePaths = () => {
-    //console.log(addedPaths, excludedPaths);
     pathsHidden.value = !pathsHidden.value;
     for (var i = 0; i < link["_groups"][0].length; i++) {
       if (!addedPaths.includes(i)) {
@@ -289,16 +297,21 @@
   }
 
   const onFilePicked = (event) => {
-    loading.value = true;
-    currentBus.value = 0;
-    maxPath = 0;
-    clearPath(); clearNodes(); clearLinks(); stopAnimation();
+    fileUploaded.value = true;
     file.value = event.target.files[0];
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target.result;
     };
     reader.readAsText(file.value);
+  };
+
+  const runAlgorithm = () => {
+    executed.value = true;
+    loading.value = true;
+    currentBus.value = 0;
+    maxPath = 0;
+    clearPath(); clearNodes(); clearLinks(); stopAnimation();
 
     var formData = new FormData();
     formData.append('file', file.value);
@@ -331,6 +344,8 @@
             maxPath = finalRoutes[i].length;
           }
         }
+
+        longestPath.value = Math.max(...pathsDistances);
 
         const middleFirstPoint = (firstDistances.length - 1) / 2;
         const middleSecondPoint = (secondDistances.length + 1) / 2;
