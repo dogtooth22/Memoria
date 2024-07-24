@@ -144,5 +144,8 @@ body {
       width: 50px;
     }
   }
+  .error {
+    color: red;
+  }
 }
 

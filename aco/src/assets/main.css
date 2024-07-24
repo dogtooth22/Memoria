@@ -52,11 +52,18 @@ button[disabled]{
   color: #666666;
 }
 
-input[type='text'] {
+input[type='number'] {
   padding: 5px;
   margin: 5px;
   border-radius: 5px;
-  border: 1px solid #ccc;
+  border: 1px solid black;
+}
+
+select {
+  padding: 5px;
+  margin: 5px;
+  border-radius: 5px;
+  border: 1px solid black;
 }
 
 @media (hover: hover) {

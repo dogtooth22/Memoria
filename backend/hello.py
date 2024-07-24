@@ -1,8 +1,9 @@
 import time
 import numpy as np
 import base64
-from io import BytesIO
-from flask import Flask, request, send_file, make_response
+import zipfile
+from io import BytesIO, StringIO
+from flask import Flask, request, send_file
 from flask_cors import CORS
 from Instancia import Instancia
 from ACO import ACO
@@ -40,7 +41,7 @@ def post_world():
     pathsDistances = [convert_numpy_int_to_int(i.pathDistance) for i in best_route.paths]
 
     image = best_route.plotSolutions(best_route.statistics)
-
+    
     output = BytesIO()
     image.savefig(output, format='png')
     output.seek(0)  # Rewind the buffer
@@ -48,6 +49,29 @@ def post_world():
     encoded_image = base64.b64encode(output.read()).decode('utf-8')
     
     return [instancia.distanciasEstacionesPuntosEncuentros.tolist(), instancia.distanciasPuntosEncuentrosRefugios.tolist(), paths, pathsDistances, best_route.shelters.tolist(), final_time, encoded_image]
+
+@app.route("/download", methods=['POST'])
+def download_zip():
+    img = request.form['img']
+    image_bytes = base64.b64decode(img + '===')
+
+    data = BytesIO()
+    #in_memory_file = StringIO()
+    #in_memory_file.write('This is the content of the new file.')
+    #in_memory_file.seek(0)
+
+    #fig, ax = plt.subplots()
+    #ax.plot([0, 1, 2], [0, 1, 4])
+    image_output = BytesIO()
+    image_output.write(image_bytes)
+    image_output.seek(0)
+
+    with zipfile.ZipFile(data, mode='w') as z:
+        #z.writestr('new_file.txt', in_memory_file.read())
+        z.writestr('plot.png', image_output.getvalue())
+
+    data.seek(0)
+    return send_file(data, mimetype='application/zip', as_attachment=True, download_name='data.zip')
 
 @app.route("/hello")
 def hello():

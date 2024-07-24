@@ -4,23 +4,28 @@
     <div class="row flex-wrap">
       <div class="column">
         <p>Alpha</p>
-        <input type="number" v-model="alpha" min="0" step="0.1"/>
+        <input type="number" v-model="alpha" min="0" step="0.1" required/>
+        <!--<p class="error"></p>-->
       </div>
       <div class="column">
         <p>Beta</p>
-        <input type="number" v-model="beta" min="0" step="0.1"/>
+        <input type="number" v-model="beta" min="0" step="0.1" required/>
+        <!--<p class="error"></p>-->
       </div>
       <div class="column">
         <p>q</p>
-        <input type="number" v-model="q" min="0"/>
+        <input type="number" v-model="q" min="0" required/>
+        <!--<p class="error"></p>-->
       </div>
       <div class="column">
         <p>Decay</p>
-        <input type="number" v-model="decay" min="0" max="1" step="0.1"/>
+        <input type="number" v-model="decay" min="0" max="1" step="0.1" required/>
+        <!--<p class="error"></p>-->
       </div>
       <div class="column">
         <p>N of iterations</p>
-        <input type="number" v-model="n_iterations" min="1" step="10"/>
+        <input type="number" v-model="n_iterations" min="1" step="10" required/>
+        <!--<p class="error"></p>-->
       </div>
       <div class="column">
         <p>Algorithm</p>
@@ -48,7 +53,7 @@
       </div>
   
       <p>Bus {{ currentBus + 1 }}, distance {{ pathsDistances[currentBus] }}</p>
-
+      <button @click="download">Download something</button>
     </template>
     
     <div class="column" v-if="executed == true && loading == true">
@@ -121,7 +126,8 @@
         <img v-bind:src="sourceImage" alt="">
         <div class="column" style="width: 50%;">
           <p>Ant Colony Optimization progress over time. All solutions are improved in order to have a shorter evacuation time. To improve solutions, you might try with different parameters, such as the number of iterations.</p>
-          <p>Correlation's slope shows if the number of iterations has any impact in the solution's quality. It's better when the slope is negative and closer to -1, but since solutions are very random that might not be very frequent.</p>
+          <p>Correlation's slope shows if the number of iterations has any impact in the solution's quality. It's better when the slope is negative and closer to -1, because it implies that the greater the number of iterations, the solution's quality will be better.
+            However, since solutions are very random that might not be very frequent.</p>
         </div>
       </div>
     </div>
@@ -152,7 +158,27 @@
   var executed = ref(false);
   var loading = ref(false);
   var pathsHidden = ref(false);
-  var sourceImage = ref('');
+  var sourceImage, originalImage = ref('');
+
+  const download = () => {
+    var formData = new FormData();
+    formData.append('img', originalImage);
+    
+    axios.post('http://127.0.0.1:5000/download', 
+      formData, {
+        responseType: 'blob'
+      })
+      .then(response => {
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'download.zip');
+        document.body.appendChild(link);
+        link.click();
+      }).catch(error => {
+        console.error(error);
+      });
+  };
 
   const plusBus = () => {
     if (currentBus.value < finalRoutes.length - 1) {
@@ -307,6 +333,34 @@
   };
 
   const runAlgorithm = () => {
+    var errorText = '';
+    if (alpha === '') {
+      errorText += "Alpha is required\n";
+    } if (beta === '') {
+      errorText += "Beta is required\n";
+    } if (q === '') {
+      errorText += "q is required\n";
+    } if (decay === '') {
+      errorText += "Decay is required\n";
+    } if (n_iterations === '') {
+      errorText += "Number of iterations is required\n";
+    } if (alpha < 0) {
+      errorText += "Alpha must be greater than 0\n";
+    } if (beta < 0) {
+      errorText += "Beta must be greater than 0\n";
+    } if (q < 0) {
+      errorText += "q must be greater than 0\n";
+    } if (decay < 0 || decay > 1) {
+      errorText += "Decay must be between 0 and 1\n";
+    } if (n_iterations < 1 && n_iterations !== '') {
+      errorText += "Number of iterations must be greater than 0";
+    }
+
+    if (errorText != '') {
+      alert(errorText);
+      return;
+    }
+    
     executed.value = true;
     loading.value = true;
     currentBus.value = 0;
@@ -321,7 +375,6 @@
     formData.append('decay', decay);
     formData.append('n_iterations', n_iterations);
     formData.append('algorithm', algorithm);
-
     axios.post('http://127.0.0.1:5000',
       formData, {
         headers: {
@@ -337,6 +390,7 @@
         finalShelters = response.data[4];
         executionTime = response.data[5];
 
+        originalImage = response.data[6];
         sourceImage = 'data:image/png;base64,' + response.data[6];
 
         for (var i = 0; i < finalRoutes.length; i++) {
