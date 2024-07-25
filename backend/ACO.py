@@ -123,8 +123,8 @@ class ACO:
             improvedResults.append(improvedResult)
 
         betterSolutionIndex = improvedResults.index(min(improvedResults, key=lambda x: x.longestDistance))
-        originalBestSolution = originalResults[betterSolutionIndex]
-        originalBestSolution.tabulateResults(originalBestSolution)
+        #originalBestSolution = originalResults[betterSolutionIndex]
+        #originalBestSolution.tabulateResults(originalBestSolution)
 
         betterSolution = improvedResults[betterSolutionIndex]
         betterSolution.statistics = statistics

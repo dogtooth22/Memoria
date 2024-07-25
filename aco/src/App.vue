@@ -132,10 +132,12 @@
       </div>
     </div>
   </div>
+  <Footer></Footer>
 </template>
 
 <script setup>
   //import HelloWorld from './components/HelloWorld.vue';
+  import Footer from './components/Footer.vue';
   import { onMounted, ref } from 'vue';
   import axios from 'axios';
   import * as d3 from 'd3';
@@ -159,26 +161,6 @@
   var loading = ref(false);
   var pathsHidden = ref(false);
   var sourceImage, originalImage = ref('');
-
-  const download = () => {
-    var formData = new FormData();
-    formData.append('img', originalImage);
-    
-    axios.post('http://127.0.0.1:5000/download', 
-      formData, {
-        responseType: 'blob'
-      })
-      .then(response => {
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'download.zip');
-        document.body.appendChild(link);
-        link.click();
-      }).catch(error => {
-        console.error(error);
-      });
-  };
 
   const plusBus = () => {
     if (currentBus.value < finalRoutes.length - 1) {
@@ -553,6 +535,28 @@
         loading.value = false;
         console.error(error);
     });
+  };
+
+  const download = () => {
+    var formData = new FormData();
+    formData.append('img', originalImage);
+    formData.append('routes', JSON.stringify(finalRoutes));
+    formData.append('distances', JSON.stringify(pathsDistances));
+    
+    axios.post('http://127.0.0.1:5000/download', 
+      formData, {
+        responseType: 'blob'
+      })
+      .then(response => {
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'download.zip');
+        document.body.appendChild(link);
+        link.click();
+      }).catch(error => {
+        console.error(error);
+      });
   };
 
   onMounted(() => {

@@ -1,18 +1,5 @@
 @import './base.css';
 
-#app {
-  grid-area: main;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  text-align: center;
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  margin-top: 50px;
-  margin-bottom: 50px;
-  /*font-weight: normal;*/
-}
-
 a {
   cursor: pointer;
   transition: 0.4s;

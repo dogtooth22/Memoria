@@ -3,6 +3,7 @@ import numpy as np
 import base64
 import zipfile
 from io import BytesIO, StringIO
+from tabulate import tabulate
 from flask import Flask, request, send_file
 from flask_cors import CORS
 from Instancia import Instancia
@@ -50,24 +51,27 @@ def post_world():
     
     return [instancia.distanciasEstacionesPuntosEncuentros.tolist(), instancia.distanciasPuntosEncuentrosRefugios.tolist(), paths, pathsDistances, best_route.shelters.tolist(), final_time, encoded_image]
 
+import json
 @app.route("/download", methods=['POST'])
 def download_zip():
     img = request.form['img']
     image_bytes = base64.b64decode(img + '===')
+    routes = json.loads(request.form['routes'])
+    distances = json.loads(request.form['distances'])
 
+    text = tabulateText(routes, distances)
     data = BytesIO()
-    #in_memory_file = StringIO()
-    #in_memory_file.write('This is the content of the new file.')
-    #in_memory_file.seek(0)
+    in_memory_file = StringIO()
+    in_memory_file.write(text)
+    #in_memory_file.write("Distances: " + str(distances))
+    in_memory_file.seek(0)
 
-    #fig, ax = plt.subplots()
-    #ax.plot([0, 1, 2], [0, 1, 4])
     image_output = BytesIO()
     image_output.write(image_bytes)
     image_output.seek(0)
 
     with zipfile.ZipFile(data, mode='w') as z:
-        #z.writestr('new_file.txt', in_memory_file.read())
+        z.writestr('routes.txt', in_memory_file.read())
         z.writestr('plot.png', image_output.getvalue())
 
     data.seek(0)
@@ -84,3 +88,24 @@ def convert_numpy_int_to_int(item):
         return [convert_numpy_int_to_int(i) for i in item]
     else:
         return item
+    
+def tabulateText(routes, distances):
+    print(routes, distances, len(routes), len(distances))
+    busDictionary = {"Bus": [i + 1 for i in range(len(routes))]}
+    maxPath = max([len(routes[i]) for i in range(len(routes))]) # Max number of paths for a bus
+
+    for i in range(maxPath):
+        #if i % 2 == 1 or i == 0: # Deleted this line bc I did a transformPath function before
+        bus = "Trip " + str(i + 1)
+        route = []
+        for j in range(len(routes)):
+            if i < len(routes[j]):
+                route.append(tuple([x + 1 for x in routes[j][i]]))
+            else:
+                route.append("")
+        busDictionary[bus] = route
+
+    busDictionary["Distance"] = [distances[i] for i in range(len(routes))]
+
+    return tabulate(busDictionary, headers="keys", tablefmt="github")
+
