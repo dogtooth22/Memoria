@@ -4,7 +4,7 @@ import base64
 import zipfile
 from io import BytesIO, StringIO
 from tabulate import tabulate
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, render_template
 from flask_cors import CORS
 from Instancia import Instancia
 from ACO import ACO
@@ -78,7 +78,11 @@ def download_zip():
     data.seek(0)
     return send_file(data, mimetype='application/zip', as_attachment=True, download_name='data.zip')
 
-@app.route("/hello")
+@app.errorhandler(404)
+def page_not_found(e):
+    return "404 Not Found"
+
+@app.route("/hello") # This is just for testing purposes
 def hello():
     return "Hola"
 
