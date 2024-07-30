@@ -38,7 +38,10 @@
     </div>
     <div class="column menu-buttons">
       <input type="file" ref="fileInput" accept=".txt" @change="onFilePicked"/>
-      <button @click="runAlgorithm" :disabled="!fileUploaded">Run</button>
+      <button @click="runAlgorithm" :disabled="!fileUploaded">
+        <i class="fa fa-play"></i>
+        Run
+      </button>
     </div>
     <template v-if="executed == true && loading == false">
       <p>Execution Time: {{ executionTime }}s</p>
@@ -48,12 +51,21 @@
         <button @click="plusBus">&gt;</button>
         <button @click="playAnimation" v-if="animationPlaying == false"><i class="fa fa-play"></i></button>
         <button @click="stopAnimation" v-else><i class="fa fa-pause"></i></button>
-        <button @click="hidePaths" v-if="pathsHidden == false">Hide Paths</button>
-        <button @click="showPaths" v-else>Show Paths</button>
+        <button @click="hidePaths" v-if="pathsHidden == false">
+          <i class="fa fa-eye-slash"></i>
+          Hide Paths
+        </button>
+        <button @click="showPaths" v-else>
+          <i class="fa fa-eye"></i>
+          Show Paths
+        </button>
       </div>
   
       <p>Bus {{ currentBus + 1 }}, distance {{ pathsDistances[currentBus] }}</p>
-      <button @click="download">Download something</button>
+      <button @click="download">
+        <i class="fa fa-download"></i>
+        Download
+      </button>
     </template>
     
     <div class="column" v-if="executed == true && loading == true">
@@ -258,25 +270,29 @@
     stopAnimation();
     animationPlaying.value = true;
     var pathAnimation = "";
+    var distance = 0;
     for (var i = 0; i < addedPaths.length; i++) {
+      const offset = 50;
       var path = d3.select(link["_groups"][0][addedPaths[i]]);
       if (i == 0 || i % 2 == 1) {
-        pathAnimation += "M " + path.attr("x1") + " " + (parseInt(path.attr("y1")) - 50).toString() + " L " + path.attr("x2") + " " + (parseInt(path.attr("y2")) - 50).toString() + " ";
+        distance += Math.sqrt((parseInt(path.attr("y1")) - parseInt(path.attr("y2")))**2 + (parseInt(path.attr("x1")) - parseInt(path.attr("x2")))**2);
+        console.log(path.attr("y1"), path.attr("y2"), path.attr("x1"), path.attr("x2"), Math.sqrt((parseInt(path.attr("y1")) - parseInt(path.attr("y2")))**2 + (parseInt(path.attr("x1")) - parseInt(path.attr("x2")))**2));
+        pathAnimation += "M " + path.attr("x1") + " " + (parseInt(path.attr("y1")) - offset).toString() + " L " + path.attr("x2") + " " + (parseInt(path.attr("y2")) - offset).toString() + " ";
       } if (i > 0 && i % 2 == 0) {
-        pathAnimation += "M " + path.attr("x2") + " " + (parseInt(path.attr("y2")) - 50).toString() + " L " + path.attr("x1") + " " + (parseInt(path.attr("y1")) - 50).toString() + " ";
+        pathAnimation += "M " + path.attr("x2") + " " + (parseInt(path.attr("y2")) - offset).toString() + " L " + path.attr("x1") + " " + (parseInt(path.attr("y1")) - offset).toString() + " ";
       }
     }
-
+    console.log(distance);
     const svgElement = d3.select(svg.value);
     const image = svgElement.append("image")
-      .attr("href", "https://static-00.iconduck.com/assets.00/bus-emoji-2048x1005-1c9m00t4.png")
+      .attr("href", "../src/assets/bus-emoji.png")
       .attr("width", 100)
       .attr("height", 100);
 
     image.append("animateMotion")
       .attr("path", pathAnimation)
       .attr("begin", "0s")
-      .attr("dur", addedPaths.length + "s")
+      .attr("dur", distance/250 + "s")
       .attr("repeatCount", "indefinite");
   }
 
@@ -462,12 +478,6 @@
           .attr("font", "10px sans-serif")
           .attr("fill", "red")
           .attr("filter", "url(#rounded-corners-2)")
-
-        /*var busNumber = d3.select("svg").append("text")
-          .attr("class", "tooltip")
-          .attr("font", "10px sans-serif")
-          .attr("fill", "black")
-          .attr("filter", "url(#rounded-corners)")*/
       
         // Draw graph nodes
         const nodeRadius = 15;
@@ -542,6 +552,7 @@
     formData.append('img', originalImage);
     formData.append('routes', JSON.stringify(finalRoutes));
     formData.append('distances', JSON.stringify(pathsDistances));
+    formData.append('shelters', JSON.stringify(finalShelters));
     
     axios.post('http://127.0.0.1:5000/download', 
       formData, {
@@ -549,11 +560,12 @@
       })
       .then(response => {
         const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
+        const link = document.createElement('a'); // Creates a new <a> element below footer
         link.href = url;
         link.setAttribute('download', 'download.zip');
         document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link); // Removes the <a> element
       }).catch(error => {
         console.error(error);
       });

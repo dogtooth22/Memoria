@@ -20,11 +20,11 @@ button {
   padding: 5px 10px;
   border-radius: 5px;
   text-align: center;
+  cursor: pointer;
 }
 
 button:hover {
   background-color: #f1f1f1;
-  transition: background-color 0.4s;
   transition: background-color 0.4s;
 }
 
@@ -37,6 +37,10 @@ button[disabled]{
   border: 1px solid #999999;
   background-color: #cccccc;
   color: #666666;
+}
+
+button:focus {
+  background-color: #e4e4e4;
 }
 
 input[type='number'] {

@@ -58,12 +58,13 @@ def download_zip():
     image_bytes = base64.b64decode(img + '===')
     routes = json.loads(request.form['routes'])
     distances = json.loads(request.form['distances'])
+    shelters = json.loads(request.form['shelters'])
 
-    text = tabulateText(routes, distances)
+    routeText = tabulateRoutes(routes, distances)
+    shelterText = tabulateShelters(shelters)
     data = BytesIO()
     in_memory_file = StringIO()
-    in_memory_file.write(text)
-    #in_memory_file.write("Distances: " + str(distances))
+    in_memory_file.write(routeText + "\n\n" + shelterText)
     in_memory_file.seek(0)
 
     image_output = BytesIO()
@@ -89,8 +90,7 @@ def convert_numpy_int_to_int(item):
     else:
         return item
     
-def tabulateText(routes, distances):
-    print(routes, distances, len(routes), len(distances))
+def tabulateRoutes(routes, distances):
     busDictionary = {"Bus": [i + 1 for i in range(len(routes))]}
     maxPath = max([len(routes[i]) for i in range(len(routes))]) # Max number of paths for a bus
 
@@ -109,3 +109,8 @@ def tabulateText(routes, distances):
 
     return tabulate(busDictionary, headers="keys", tablefmt="github")
 
+def tabulateShelters(shelters):
+    shelterDictionary = {"Shelter": [i + 1 for i in range(len(shelters))]}
+    shelterDictionary["Capacity"] = shelters
+
+    return tabulate(shelterDictionary, headers="keys", tablefmt="github")
