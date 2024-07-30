@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 import gc
-from original.Result import Result
+from Result import Result
 
 class Ant:
     def __init__(self, position, capacity):

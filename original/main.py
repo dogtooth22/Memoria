@@ -1,5 +1,5 @@
-from original.ACO import ACO
-from original.Instancia import Instancia
+from ACO import ACO
+from Instancia import Instancia
 import time
 import sys
 

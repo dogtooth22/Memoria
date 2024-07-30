@@ -8,9 +8,9 @@ The **Bus Evacuation Problem** (BEP) is a very difficult problem to optimize, be
 
 An ACO algorithm has many important parameters, such as:
 
-* **Alpha** ($\alpha$): a number greater or equal to 0 that (...)
-* **Beta** ($\beta$): a number greater or equal to 0 that (...)
-* **q**
+* **Alpha** ($\alpha$): a number greater or equal to 0 that resembles the importance of pheromones in the algorithm.
+* **Beta** ($\beta$): a number greater or equal to 0 that resembles the importance of distances in the algorithm.
+* **q**: the number of pheromones released by each ant.
 * **Decay**: a greater than 0 but lesser than 1 number that is multiplied with every pheromone to express their decay over time.
 * **Number of iterations**: number of times the algorithm is run.
 * **Algorithm**: it might be
