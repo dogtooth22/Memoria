@@ -18,13 +18,13 @@ An ACO algorithm has many important parameters, such as:
     - Ant Quantity
     - Ant Cycle
 
-![alt text](image-3.png)
+![Image 1](./aco/src/assets/image-3.png)
 
 ## Graph
 
 This map's problem is usually displayed as a graph such as the following: 
 
-![alt text](image.png)
+![Image 2](./aco/src/assets/image.png)
 
 These graphs have 2 mayor components:
 
@@ -38,7 +38,7 @@ Meeting points and shelters are fully-connected, so any node can be reached from
 
 This problem's data is displayed primarily in the following tables, the first being buses routes and the latter the shelters remaining space.
 
-![alt text](image-1.png)
+![Image 3](./aco/src/assets/image-1.png)
 
 A bus's first trip will always be from a starting point to a meeting point, but the remaining trips will be from a meeting point to a shelter; the movement from a shelter to a meeting point is not clearly displayed, but the next trip starts where the last trip ended. A bus's total distance is also shown in the first table, and that is the sum of all distances travelled by a bus.
 
@@ -46,4 +46,4 @@ A bus's first trip will always be from a starting point to a meeting point, but 
 
 This form of visualization is very important since the number of iterations can be so large and an algorithm that its purpose is to get better results, that improvement should be displayed in a simple way.
 
-![alt text](image-2.png)
+![Image 4](./aco/src/assets/image-2.png)
