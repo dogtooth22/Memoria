@@ -50,11 +50,8 @@ class ACO:
         pickupPointsSolutions = []
         bestSolutionsPathDistance = []
 
-        previousPheromones = np.zeros(self.distances.shape) / len(self.distances)
-
         for i in range(self.n_iterations):
             self.gen_all_paths(self.ants) # There are n_ants paths
-            self.spread_pheronomes(self.ants)
             longestPath = max(self.ants, key=lambda x: x.pathDistance)
             #mean = np.mean([ant.pathDistance for ant in self.ants]) # Mean of all paths
             #minimum = min([ant.pathDistance for ant in self.ants]) # Minimum of all paths
@@ -100,9 +97,7 @@ class ACO:
             #    shelterSolutions.pop(maxDistance)
             #    pickupPointsSolutions.pop(maxDistance)
             #    bestSolutionsPathDistance.pop(maxDistance)
-
-            self.pheromone = (1 - self.decay)*self.pheromone + (self.pheromone - previousPheromones) # Pheromones are updated. Delta is the new pheromones minus the old pheromones
-            previousPheromones = self.pheromone
+            self.pheromone = (1 - self.decay)*self.pheromone + self.spread_pheronomes(self.ants)
             
             # Reset values
             for i in range(self.n_ants):
@@ -129,10 +124,10 @@ class ACO:
         betterSolution = improvedResults[betterSolutionIndex]
         betterSolution.statistics = statistics
 
-        min_values = [x for x in range(len(improvedResults)) if improvedResults[x].longestDistance == betterSolution.longestDistance]
+        #min_values = [x for x in range(len(improvedResults)) if improvedResults[x].longestDistance == betterSolution.longestDistance]
 
         #print(min_values)
-
+        print(self.pheromone)
         return betterSolution
 
     def gen_all_paths(self, ants):
@@ -189,6 +184,7 @@ class ACO:
         try: # There's a moment where there are zeros in the row
             move = np.random.choice(self.all_inds, 1, p=norm_row)[0]
 
+            #print(self.pheromone, pheromone, move, norm_row)
             if (self.ants[ant_id].carrying >= self.shelters[move]):
                 self.shelters[move] = 0
             else:
@@ -230,17 +226,22 @@ class ACO:
 
     def spread_pheronomes(self, ants):
         sorted_paths = sorted(ants, key=lambda x: x.pathDistance)
+        delta = np.zeros(self.distances.shape)
         for ant in sorted_paths:
             for i in range(1, len(ant.path)): # First paths don't update pheromones
-                move = ant.path[i]
-                if i % 2 == 0:
+                if i % 2 == 1:
+                    move = ant.path[i]
+                else:
                     move = [ant.path[i][1], ant.path[i][0]]
-                if self.algorithm == "ant_density":
-                    self.pheromone[move[0]][move[1]] += self.q
-                if self.algorithm == "ant_quantity":
-                    self.pheromone[move[0]][move[1]] += self.q / self.distances[move[0]][move[1]]
-                if self.algorithm == "ant_cycle":
-                    self.pheromone[move[0]][move[1]] += self.q / ant.pathDistance
+                #if self.algorithm == "ant_density":
+                #    delta[move[0]][move[1]] += self.q
+                #if self.algorithm == "ant_quantity":
+                #    delta[move[0]][move[1]] += self.q / self.distances[move[0]][move[1]]
+                #if self.algorithm == "ant_cycle":
+                delta[move[0]][move[1]] += self.q / ant.pathDistance
+            break # Only the best path is considered
+
+        return delta
 
     def improveBestSolution(self, result):
         resetWhile = True
