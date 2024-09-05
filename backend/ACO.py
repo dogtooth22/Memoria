@@ -19,6 +19,7 @@ class ACO:
         
         self.distances = distances # From meeting points to shelters
         self.pheromone = np.ones(self.distances.shape) / len(self.distances)
+        #self.testPheromone = np.ones(starting_point_distances.shape) / len(starting_point_distances)
         self.all_inds = range(distances.shape[1])
         self.n_ants = n_ants # Recomended to be equal as the number of cities
         # self.n_best = n_best # Maximum paths which pheromones will be spread. Should be deleted for now
@@ -40,7 +41,7 @@ class ACO:
 
     def run(self): # Maybe have a parameter to improve the m best solutions
         bestSolution = copy.deepcopy(self.ants)
-        bestSolutionPathDistance = np.inf
+        #bestSolutionPathDistance = np.inf
         shelterSolution = np.copy(self.shelters)
         pickupPointsSolution = np.copy(self.pickup_points)
 
@@ -61,7 +62,7 @@ class ACO:
             # All solutions are saved, this is because the shorter initial solution is not always the best
             #if longestPath.pathDistance < bestSolutionPathDistance:
             bestSolution = copy.deepcopy(self.ants)
-            bestSolutionPathDistance = longestPath.pathDistance
+            #bestSolutionPathDistance = longestPath.pathDistance
             shelterSolution = np.copy(self.shelters)
             pickupPointsSolution = np.copy(self.pickup_points)
 
@@ -98,6 +99,8 @@ class ACO:
             #    pickupPointsSolutions.pop(maxDistance)
             #    bestSolutionsPathDistance.pop(maxDistance)
             self.pheromone = (1 - self.decay)*self.pheromone + self.spread_pheronomes(self.ants)
+            #self.testPheromone = (1 - self.decay)*self.testPheromone + self.spread_test_pheronomes(self.ants)
+            #print(self.testPheromone)
             
             # Reset values
             for i in range(self.n_ants):
@@ -127,7 +130,6 @@ class ACO:
         #min_values = [x for x in range(len(improvedResults)) if improvedResults[x].longestDistance == betterSolution.longestDistance]
 
         #print(min_values)
-        print(self.pheromone)
         return betterSolution
 
     def gen_all_paths(self, ants):
@@ -242,6 +244,13 @@ class ACO:
             break # Only the best path is considered
 
         return delta
+    
+    def spread_test_pheronomes(self, ants):
+        sorted_paths = sorted(ants, key=lambda x: x.pathDistance)
+        delta = np.zeros(self.starting_point_distances.shape)
+        delta[sorted_paths[0].path[0][0]][sorted_paths[0].path[0][1]] += self.q / sorted_paths[0].pathDistance
+        return delta
+                
 
     def improveBestSolution(self, result):
         resetWhile = True
