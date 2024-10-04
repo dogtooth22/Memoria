@@ -27,14 +27,14 @@
         <input type="number" v-model="n_iterations" min="1" step="10" required/>
         <!--<p class="error"></p>-->
       </div>
-      <div class="column">
+      <!--<div class="column">
         <p>Algorithm</p>
         <select v-model="algorithm">
           <option value="ant_density">Ant Density</option>
           <option value="ant_quantity">Ant Quantity</option>
           <option value="ant_cycle">Ant Cycle</option>
         </select>
-      </div>
+      </div>-->
     </div>
     <div class="column menu-buttons">
       <input type="file" ref="fileInput" accept=".txt" @change="onFilePicked"/>
@@ -109,31 +109,35 @@
       </svg>
       <div class="column" style="width: 100%;" v-if="executed == true && loading == false">
         <table class="main-table">
-          <tr class="firstTableRow">
-            <th><!--Bus--></th>
-            <th v-for="path in maxPath">Trip {{ path }}</th>
-            <th></th>
-            <th>Total Distance</th>
-          </tr>
-          <tr v-for="(item, index) in finalRoutes.length">
-            <td class="firstTableColumn">Bus {{ index + 1 }}</td>
-            <td v-for="route in finalRoutes[index]">
-              {{ route[0] + 1 }} -> {{ route[1] + 1 }}
-            </td>
-            <td v-for="i in maxPath - finalRoutes[index].length"></td>
-            <td></td>
-            <td>{{ pathsDistances[index] }}</td>
-          </tr>
+          <tbody>
+            <tr class="firstTableRow">
+              <th><!--Bus--></th>
+              <th v-for="path in maxPath">Trip {{ path }}</th>
+              <th></th>
+              <th>Total Distance</th>
+            </tr>
+            <tr v-for="(item, index) in finalRoutes.length">
+              <td class="firstTableColumn">Bus {{ index + 1 }}</td>
+              <td v-for="route in finalRoutes[index]">
+                {{ route[0] + 1 }} -> {{ route[1] + 1 }}
+              </td>
+              <td v-for="i in maxPath - finalRoutes[index].length"></td>
+              <td></td>
+              <td>{{ pathsDistances[index] }}</td>
+            </tr>
+          </tbody>
         </table>
         <table class="main-table">
-          <tr class="firstTableRow">
-            <th>Shelters</th>
-            <th v-for="index in finalShelters.length">{{ index }}</th>
-          </tr>
-          <tr>
-            <td class="firstTableColumn">Space Available</td>
-            <td v-for="shelter in finalShelters">{{ shelter }}</td>
-          </tr>
+          <tbody>
+            <tr class="firstTableRow">
+              <th>Shelters</th>
+              <th v-for="index in finalShelters.length">{{ index }}</th>
+            </tr>
+            <tr>
+              <td class="firstTableColumn">Space Available</td>
+              <td v-for="shelter in finalShelters">{{ shelter }}</td>
+            </tr>
+          </tbody>
         </table>
         <img v-bind:src="sourceImage" alt="">
         <div class="column" style="width: 50%;">
@@ -148,14 +152,15 @@
 </template>
 
 <script setup>
-  //import HelloWorld from './components/HelloWorld.vue';
   import Footer from './components/Footer.vue';
-  import { onMounted, ref } from 'vue';
+  import { onMounted, onUpdated, ref, onBeforeMount, onBeforeUnmount } from 'vue';
   import axios from 'axios';
   import * as d3 from 'd3';
+  import Cookies from 'js-cookie';
 
   // Default parameters
-  var alpha = 1, beta = 1, q = 4, decay = 0.9, n_iterations = 50, algorithm = "ant_density";
+  var algorithm = "ant_density";
+  var alpha = ref(0), beta = ref(0), q = ref(0), decay = ref(0), n_iterations = ref(0);
 
   const svg = ref(null);
   const nodes = [], links = [];
@@ -367,11 +372,11 @@
 
     var formData = new FormData();
     formData.append('file', file.value);
-    formData.append('alpha', alpha);
-    formData.append('beta', beta);
-    formData.append('q', q);
-    formData.append('decay', decay);
-    formData.append('n_iterations', n_iterations);
+    formData.append('alpha', alpha.value);
+    formData.append('beta', beta.value);
+    formData.append('q', q.value);
+    formData.append('decay', decay.value);
+    formData.append('n_iterations', n_iterations.value);
     formData.append('algorithm', algorithm);
     axios.post('http://127.0.0.1:5000',
       formData, {
@@ -541,6 +546,8 @@
           node.attr('cx', d => d.x)
               .attr('cy', d => d.y);
         });
+        var audio = new Audio('../src/assets/finish.mp3');
+        audio.play();
       }).catch(error => {
         loading.value = false;
         console.error(error);
@@ -571,6 +578,51 @@
       });
   };
 
-  onMounted(() => {
+  const setParametersCookie = (alpha, beta, q, decay, n_iterations) => {
+    var parameters = {alpha: alpha, beta: beta, q: q, decay: decay, n_iterations: n_iterations};
+    Cookies.set('parameters', JSON.stringify(parameters), { expires: 7 }); // Cookie expires in 7 days
+    setParameters(alpha, beta, q, decay, n_iterations);
+  };
+
+  const getParametersCookie = () => {
+    return Cookies.get('parameters');
+  };
+
+  const updateParametersCookie = (alpha, beta, q, decay, n_iterations) => {
+    var parameters = {alpha: alpha, beta: beta, q: q, decay: decay, n_iterations: n_iterations};
+    Cookies.set('parameters', JSON.stringify(parameters), { expires: 7 });
+  };
+
+  const deleteParametersCookie = () => {
+    Cookies.remove('parameters');
+  };
+
+  const setParameters = (newAlpha, newBeta, newQ, newDecay, newN) => {
+    alpha.value = parseFloat(newAlpha);
+    beta.value = parseFloat(newBeta);
+    q.value = parseInt(newQ);
+    decay.value = parseFloat(newDecay);
+    n_iterations.value = parseInt(newN);
+  };
+
+  onBeforeMount(() => {
   });
+
+  onMounted(() => {
+    if (getParametersCookie() == undefined) {
+      console.log("Cookie doesn't exist");
+      setParametersCookie(2, 4, 4, 0.1, 400);
+    } else {
+      var parameters = JSON.parse(getParametersCookie());
+      setParameters(parameters.alpha, parameters.beta, parameters.q, parameters.decay, parameters.n_iterations);
+    }
+  });
+
+  onBeforeUnmount(() => {
+  });
+
+  onUpdated(() => {
+    updateParametersCookie(alpha.value, beta.value, q.value, decay.value, n_iterations.value);
+  });
+
 </script>

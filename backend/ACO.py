@@ -70,6 +70,9 @@ class ACO:
             shelterSolutions.append(shelterSolution)
             pickupPointsSolutions.append(pickupPointsSolution)
             bestSolutionsPathDistance.append(longestPath.pathDistance)
+            #for i in bestSolutions:
+            #    for j in i:
+            #        print(j.path)
 
             #elif longestPath.pathDistance == bestSolutionPathDistance:
             #    bestSolution = copy.deepcopy(self.ants)
@@ -114,6 +117,9 @@ class ACO:
         originalResults = []
         for i in range(len(bestSolutions)):
             result = Result(bestSolutions[i], bestSolutionsPathDistance[i], shelterSolutions[i], pickupPointsSolutions[i])
+            #for j in result.paths:
+            #    print(j.path)
+            #print()
             result.transformPaths(result)
             originalResults.append(result)
             improvedResult = self.improveBestSolution(result)
@@ -255,11 +261,14 @@ class ACO:
     def improveBestSolution(self, result):
         resetWhile = True
         resultCopy = copy.deepcopy(result)
+        #print("New solution")
         while resetWhile:
             resetWhile = False 
             for i in range(len(resultCopy.paths)):
                 if resultCopy.paths[i].pathDistance == resultCopy.longestDistance:
                     popedPath = resultCopy.paths[i].path[-1]
+                    #print(resultCopy.paths[i].path)
+                    #print(popedPath)
                     for j in range(len(resultCopy.paths)):
                         if j != i:
                             if len(resultCopy.paths[i].path) == 2:

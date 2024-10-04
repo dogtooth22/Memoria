@@ -51,6 +51,7 @@ class Result:
     def transformPaths(self, result): # This function is made to make simpler tables
         for i in range(len(result.paths)):
             newPaths = []
+            #print(result.paths[i].path)
             for j in range(len(result.paths[i].path)):
                 if j % 2 == 1 or j == 0:
                     newPaths.append(result.paths[i].path[j])
